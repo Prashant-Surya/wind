@@ -29,11 +29,13 @@ class ChatConnection(sockjs.tornado.SockJSConnection):
         self.broadcast(self.participants, "Someone joined.")
 
         # Add client to the clients list
+        print "Someone joined.."
         print self.session.conn_info.__dict__
         self.participants.add(self)
 
     def on_message(self, message):
         # Broadcast message
+        print "Received Message ", message
         self.broadcast(self.participants, message)
 
     def on_close(self):

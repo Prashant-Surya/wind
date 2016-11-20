@@ -8,3 +8,5 @@
 *.swp
 *.swo
 .ropeproject/
+windjs/build
+windjs/node_modules

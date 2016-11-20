@@ -88,6 +88,7 @@ class RealtimeServer(object):
         app = tornado.web.Application(urls)
 
         app.listen(8080)
+        print "Starting server on port 8080"
         tornado.ioloop.IOLoop.instance().start()
 
     @classmethod

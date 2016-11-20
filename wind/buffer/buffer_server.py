@@ -2,15 +2,14 @@
 """
     Simple sockjs-tornado chat application. By default will listen on port 8080.
 """
+
 import tornado
 import tornado.ioloop
 import tornado.web
 
-import sockjs.tornado
 
-import pylzma
 from manager import BufferManager
-import json
+
 
 class MessagePushBufferHandler(tornado.web.RequestHandler):
     """Handler to buffer realtime messages.

@@ -1,5 +1,5 @@
 
-export function extend<T>(target, ...sources) {
+export function extend(target, ...sources) {
   for (var i = 0; i < sources.length; i++) {
     var extensions = sources[i];
     for (var property in extensions) {
@@ -87,4 +87,62 @@ export function safeJSONStringify(source){
 	} catch (e) {
 		return JSON.stringify(decycleObject(source));
 	}
+}
+
+
+export function arrayIndexOf(array, item) { // MSIE doesn't have array.indexOf
+      var nativeIndexOf = Array.prototype.indexOf;
+      if (array === null) {
+              return -1;
+            }
+      if (nativeIndexOf && array.indexOf === nativeIndexOf) {
+              return array.indexOf(item);
+            }
+      for (var i = 0, l = array.length; i < l; i++) {
+              if (array[i] === item) {
+                        return i;
+                      }
+            }
+      return -1;
+}
+
+export function keys(object){
+      var keys = [];
+      objectApply(object, function(_, key) {
+              keys.push(key);
+            });
+      return keys;
+}
+
+
+export function apply(array, f, context) {
+    for (var i = 0; i < array.length; i++) {
+        f.call(context || global, array[i], i, array);
+    }
+}
+
+export function map(array, f) {
+      var result = [];
+      for (var i = 0; i < array.length; i++) {
+              result.push(f(array[i], i, array, result));
+            }
+      return result;
+}
+
+export function all(array, test){
+      for (var i = 0; i < array.length; i++) {
+              if (!test(array[i], i, array)) {
+                        return false;
+                      }
+            }
+      return true;
+}
+
+export function any(array, test){
+      for (var i = 0; i < array.length; i++) {
+              if (test(array[i], i, array)) {
+                        return true;
+                      }
+            }
+      return false;
 }

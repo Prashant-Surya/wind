@@ -1,6 +1,7 @@
 import EventsDispatcher from "core/events/dispatcher";
 import  Protocol from "core/connection/protocol/protocol";
 import * as Collections from "core/utils/collections";
+import {ComponentLogger} from "core/logger";
 
 
 export default class Connection extends EventsDispatcher{
@@ -8,6 +9,13 @@ export default class Connection extends EventsDispatcher{
         super();
         this.id = id;
         this.transport = transport;
+        this.transport.connect();
+        this.bindListeners();
+        this.logger = new ComponentLogger(this);
+    }
+
+    handlesActivityChecks(){
+        return this.transport.handlesActivityChecks();
     }
 
     send(data){
@@ -15,6 +23,7 @@ export default class Connection extends EventsDispatcher{
     }
 
     send_event(name, data, channel){
+        this.logger.debug("Received request for sending event ", name, data, channel);
         var message = {
             event: name,
             data: data
@@ -22,6 +31,15 @@ export default class Connection extends EventsDispatcher{
 
         if (channel) message.channel = channel;
         return this.send(Protocol.encodeMessage(message));
+    }
+
+    ping(){
+        if (this.transport.supportsPing()){
+            this.transport.ping();
+        }
+        else {
+            this.send_event('wind:ping', {});
+        }
     }
 
     close(){

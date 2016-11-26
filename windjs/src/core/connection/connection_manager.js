@@ -1,4 +1,8 @@
 import EventsDispatcher from "core/events/dispatcher";
+import {ComponentLogger} from "core/logger";
+import { OneOffTimer as Timer } from 'core/utils/timers/timers';
+import Connection from 'core/connection/connection';
+import TransportConnection from 'core/transports/transport_connection';
 
 
 export default class ConnectionManager extends EventsDispatcher{
@@ -13,20 +17,17 @@ export default class ConnectionManager extends EventsDispatcher{
         this.connectionCallbacks = this.buildConnectionCallbacks();
         this.errorCallbacks = this.buildErrorCallbacks();
         this.handshakeCallbacks = this.buildHandshakeCallbacks(this.errorCallbacks);
+        this.logger = new ComponentLogger(this);
     }
 
     connect(){
-    	if (this.connection || this.runner) {
-      		return;
-    	}
-    	if (!this.strategy.isSupported()) {
-      		this.updateState("failed");
-      		return;
-    	}
-    	this.updateState("connecting");
-    	this.startConnecting();
-    	this.setUnavailableTimer();
-
+		if (this.connection) {
+			return;
+		}
+        this.logger.debug("About to connect now");
+		this.updateState("connecting");
+		this.startConnecting();
+		//this.setUnavailableTimer();
     }
 
     send(data){
@@ -37,46 +38,44 @@ export default class ConnectionManager extends EventsDispatcher{
     }
 
     send_event(name, data, channel){
-        if (!this.connection) return false;
+        if (!this.connection) {
+            this.logger.debug("Sending event but connection not active ..", name, data, channel);
+            return false;
+        }
 
         return this.connection.send_event(name, data, channel);
     }
 
     disconnect(){
+        this.logger.debug("disconnect called");
         this.disconnectInternally();
         this.updateState("disconnected");
     }
 
 	isEncrypted() {
 		return this.encrypted;
-	};
+	}
 
 
 	startConnecting() {
-		var callback = (error, handshake)=> {
-			if (error) {
-				this.runner = this.strategy.connect(0, callback);
-			} else {
-				if (handshake.action === "error") {
-					this.emit("error", { type: "HandshakeError", error: handshake.error });
-					this.timeline.error({ handshakeError: handshake.error });
-				} else {
-					this.abortConnecting(); // we don't support switching connections yet
-					this.handshakeCallbacks[handshake.action](handshake);
-				}
-			}
-    	};
-		this.runner = this.strategy.connect(0, callback);
-	};
+        this.logger.debug("startConnecting called");
+
+        const transport = new TransportConnection(this.key, this.options);
+        this.connection = new Connection(null, transport);
+        this.setConnection(this.connection);
+	}
 
 	abortConnecting() {
+        this.logger.debug("abortConnecting called");
 		if (this.runner) {
 			this.runner.abort();
 			this.runner = null;
 		}
-	};
+	}
 
 	disconnectInternally() {
+        this.logger.debug("disconnectInternally called");
+
 		this.abortConnecting();
 		this.clearRetryTimer();
 		this.clearUnavailableTimer();
@@ -84,19 +83,11 @@ export default class ConnectionManager extends EventsDispatcher{
 			var connection = this.abandonConnection();
 			connection.close();
 		}
-	};
+	}
 
 
-	updateStrategy() {
-		this.strategy = this.options.getStrategy({
-			key: this.key,
-			encrypted: this.encrypted
-		});
-	};
-
-	
 	retryIn(delay) {
-		this.timeline.info({ action: "retry", delay: delay });
+        this.logger.debug("Retrying with delay...", delay);
 		if (delay > 0) {
 			this.emit("connecting_in", Math.round(delay / 1000));
 		}
@@ -107,39 +98,46 @@ export default class ConnectionManager extends EventsDispatcher{
 	}
 
 	clearRetryTimer() {
+        this.logger.debug("clearRetryTimer called");
+
 		if (this.retryTimer) {
 			this.retryTimer.ensureAborted();
 			this.retryTimer = null;
 		}
-	};
+	}
 
 	setUnavailableTimer() {
+        this.logger.debug("setUnavailableTimer called");
+
 		this.unavailableTimer = new Timer(
 			this.options.unavailableTimeout,
 			()=> {
 				this.updateState("unavailable");
 			}
 		);
-	};
+	}
 
 	clearUnavailableTimer() {
+        this.logger.debug("clearUnavailableTimer called", this.unavailableTimer);
+
 		if (this.unavailableTimer) {
 			this.unavailableTimer.ensureAborted();
 		}
-	};
+	}
 
 	sendActivityCheck() {
+        this.logger.debug("sendActivityCheck called");
+
 		this.stopActivityCheck();
 		this.connection.ping();
 		// wait for pong response
 		this.activityTimer = new Timer(
 			this.options.pongTimeout,
 			()=> {
-				this.timeline.error({ pong_timed_out: this.options.pongTimeout });
 				this.retryIn(0);
 			}
 		);
-	};
+	}
 
 	resetActivityCheck() {
 		this.stopActivityCheck();
@@ -149,19 +147,19 @@ export default class ConnectionManager extends EventsDispatcher{
 				this.sendActivityCheck();
 			});
 		}
-	};
+	}
 
 	stopActivityCheck() {
 		if (this.activityTimer) {
 			this.activityTimer.ensureAborted();
 		}
-	};
+	}
 
 	buildConnectionCallbacks() {
 		return {
 			message: (message)=> {
 				// includes pong messages from server
-				this.resetActivityCheck();
+				//this.resetActivityCheck();
 				this.emit('message', message);
 			},
 			ping: ()=> {
@@ -171,10 +169,12 @@ export default class ConnectionManager extends EventsDispatcher{
 				this.resetActivityCheck();
 			},
 			error: (error)=> {
+                this.logger.debug("Connection callback error ", error);
 				// just emit error to user - socket will already be closed by browser
 				this.emit("error", { type: "WebSocketError", error: error });
 			},
 			closed: ()=> {
+                this.logger.debug("COnnection closed callback");
 				this.abandonConnection();
 				if (this.shouldRetry()) {
 					this.retryIn(1000);
@@ -183,24 +183,24 @@ export default class ConnectionManager extends EventsDispatcher{
 		};
 	}
 
- 	buildHandshakeCallbacks(errorCallbacks) {
-		const new_callbacks = { ...errorCallbacks, {
+    buildHandshakeCallbacks(errorCallbacks) {
+		const new_callbacks = {
+            ...errorCallbacks,
 			connected: (handshake)=> {
-				this.activityTimeout = Math.min(
-					this.options.activityTimeout,
-					handshake.activityTimeout,
-					handshake.connection.activityTimeout || Infinity
-        		);
-        		this.clearUnavailableTimer();
-        		this.setConnection(handshake.connection);
-        		this.updateState("connected", { socket_id: this.socket_id });
-				}
+                this.activityTimeout = Math.min(
+                    this.options.activityTimeout,
+                    handshake.activityTimeout,
+                    handshake.connection.activityTimeout || Infinity
+                );
+                this.clearUnavailableTimer();
+                this.setConnection(handshake.connection);
+                this.updateState("connected", { socket_id: this.socket_id });
 			}
 		};
 		return new_callbacks;
 	}
 
-  	buildErrorCallbacks() {
+    buildErrorCallbacks() {
 		let withErrorEmitted = (callback)=> {
 			return (result)=> {
 				if (result.error) {
@@ -208,24 +208,65 @@ export default class ConnectionManager extends EventsDispatcher{
 				}
 				callback(result);
 			};
-		}
+		};
 
-    return {
-      ssl_only: withErrorEmitted(()=> {
-        this.encrypted = true;
-        this.updateStrategy();
-        this.retryIn(0);
-      }),
-      refused: withErrorEmitted(()=> {
-        this.disconnect();
-      }),
-      backoff: withErrorEmitted(()=> {
-        this.retryIn(1000);
-      }),
-      retry: withErrorEmitted(()=> {
-        this.retryIn(0);
-      })
-    };
-  };
+        return {
+            ssl_only: withErrorEmitted(()=> {
+                this.logger.debug("ssl_only error callback");
+                this.encrypted = true;
+                this.retryIn(0);
+            }),
+            refused: withErrorEmitted(()=> {
+                this.disconnect();
+            }),
+            backoff: withErrorEmitted(()=> {
+                this.retryIn(1000);
+            }),
+            retry: withErrorEmitted(()=> {
+                this.logger.debug("retry error callback");
+                this.retryIn(0);
+            })
+        };
+    }
+
+    setConnection(connection) {
+        this.connection = connection;
+        this.logger.debug("Setting connection callbacks ", this.connectionCallbacks);
+        for (var event in this.connectionCallbacks) {
+            this.connection.bind(event, this.connectionCallbacks[event]);
+        }
+        //this.resetActivityCheck();
+    }
+
+    abandonConnection() {
+        if (!this.connection) {
+            return;
+        }
+        this.stopActivityCheck();
+        for (var event in this.connectionCallbacks) {
+            this.connection.unbind(event, this.connectionCallbacks[event]);
+        }
+        var connection = this.connection;
+        this.connection = null;
+        return connection;
+    }
+
+	updateState(newState, data) {
+		var previousState = this.state;
+		this.state = newState;
+		if (previousState !== newState) {
+			var newStateDescription = newState;
+			if (newStateDescription === "connected") {
+				newStateDescription += " with new socket ID " + data.socket_id;
+			}
+			this.logger.debug('State changed', previousState + ' -> ' + newStateDescription);
+			this.emit('state_change', { previous: previousState, current: newState });
+			this.emit(newState, data);
+		}
+	}
+
+	shouldRetry(){
+		return this.state === "connecting" || this.state === "connected";
+	}
 
 }

@@ -3,87 +3,29 @@
 <head>
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
   <script src="http://cdn.jsdelivr.net/sockjs/0.3/sockjs.min.js"></script>
-  <script src="build/wind/wind.js" </script>
-  <script>
-    $(function() {
-      var conn = null;
+  <script src="build/wind/wind.js"></script>
+  <script type="text/javascript">
 
-      function log(msg) {
-        var control = $('#log');
-        control.html(control.html() + msg + '<br/>');
-        control.scrollTop(control.scrollTop() + 1000);
-      }
+    var connect_to_wind = function() {
+        var channel;
+        var wind = new Wind();
+        var channel_name = "updates";
+        channel = wind.subscribe(channel_name);
+        console.log("channel ", channel);
+        channel.bind("submission", function(data){
+            console.log("Received data by channel ", data);
+        });
 
-      function connect() {
-        disconnect();
+        $('form').submit(function() {
+            var text = $('#text').val();
+            channel.trigger("submission", {"chat_message":text});
+            $('#text').val('').focus();
+            return false;
+          });
 
-        var transports = $('#protocols input:checked').map(function(){
-            return $(this).attr('id');
-        }).get();
+      };
 
-        conn = new SockJS('http://' + "localhost:8080" + '/chat', transports);
-
-        log('Connecting...');
-
-        conn.onopen = function() {
-          log('Connected.');
-          update_ui();
-          conn.send('wind')
-        };
-
-        conn.onmessage = function(e) {
-          log('Received: ' + e.data);
-        };
-
-        conn.onclose = function() {
-          log('Disconnected.');
-          conn = null;
-          update_ui();
-        };
-      }
-
-      function disconnect() {
-        if (conn != null) {
-          log('Disconnecting...');
-
-          conn.close();
-          conn = null;
-
-          update_ui();
-        }
-      }
-
-      function update_ui() {
-        var msg = '';
-
-        if (conn == null || conn.readyState != SockJS.OPEN) {
-          $('#status').text('disconnected');
-          $('#connect').text('Connect');
-        } else {
-          $('#status').text('connected (' + conn.protocol + ')');
-          $('#connect').text('Disconnect');
-        }
-      }
-
-      $('#connect').click(function() {
-        if (conn == null) {
-          connect();
-        } else {
-          disconnect();
-        }
-
-        update_ui();
-        return false;
-      });
-
-      $('form').submit(function() {
-        var text = $('#text').val();
-        log('Sending: ' + text);
-        conn.send(text);
-        $('#text').val('').focus();
-        return false;
-      });
-    });
+$(document).ready(connect_to_wind);
 </script>
 </head>
 <body>

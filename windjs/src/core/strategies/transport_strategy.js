@@ -2,7 +2,6 @@ import Factory from "core/utils/factory";
 import Util from 'core/util';
 import * as Errors from 'core/errors';
 import * as Collections from 'core/utils/collections';
-import Handshake from "../connection/handshake";
 
 
 export default class TransportStrategy {
@@ -13,7 +12,7 @@ export default class TransportStrategy {
     this.options = options || {};
   }
 
-  isSupported() : boolean {
+  isSupported(){
     return this.transport.isSupported({
       encrypted: this.options.encrypted
     });
@@ -103,7 +102,7 @@ export default class TransportStrategy {
   }
 }
 
-function failAttempt(error : Error, callback : Function) {
+function failAttempt(error, callback) {
   Util.defer(function() {
     callback(error);
   });

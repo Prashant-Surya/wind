@@ -10,7 +10,7 @@ module.exports = {
 
     output: {
         library: "Wind",
-        path: "./build/",
+        path: "../wind/build/",
         filename: "[name]/[name].js",
         libraryTarget: "umd"
 
@@ -31,6 +31,6 @@ module.exports = {
             path.resolve(__dirname, 'src'),
             path.resolve(__dirname, 'node_modules'),
         ],
-        modulesDirectories: ['node_modules'],
+        modulesDirectories: ['node_modules', 'src/runtimes/web', 'src/runtimes'],
     }
 };

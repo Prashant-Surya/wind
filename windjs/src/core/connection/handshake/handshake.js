@@ -1,5 +1,5 @@
-import * as Collections from 'core/utils/collections';
 import Protocol from 'core/connection/protocol/protocol';
+import Connection from 'core/connection/connection';
 
 
 export default class Handshake {
@@ -55,7 +55,7 @@ export default class Handshake {
 		this.transport.unbind("closed", this.onClosed);
 	}
 
-	finish(action : string, params : any) {
+	finish(action, params) {
 		const new_params = {...params, transport: this.transport, action: action};
 		this.callback(
 			new_params

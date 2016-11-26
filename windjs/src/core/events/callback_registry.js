@@ -1,39 +1,46 @@
+import Logger from "core/logger";
+
 export default class CallbackRegistry {
     constructor(){
-        this._callbacks = {};
+        this.init_callbacks();
+        Logger.debug("CallbackRegistry initialized ", this._callbacks);
     }
 
     get(eventName){
-        return this._callbacks[eventName];
+        return this._callbacks.get(eventName);
     }
 
     add(eventName, callback, context){
-        this._callbacks[eventName] = this._callbacks[eventName] || {};
-        // get the function name
+        if (!this._callbacks.has(eventName)) this._callbacks.set(eventName, new Map());
+
         const callbackName = this._get_callback_id(callback);
  
 
-        this._callbacks[eventName][callbackName] = {
+        this._callbacks.get(eventName).set(callbackName, {
             callback: callback,
             context: context
-        };
+        });
     }
 
     remove(eventName, callback, context){
         if (!eventName && !callback && !context){
-            this._callbacks = {};
+            this.init_callbacks();
             return;
         }
 
         if (!(eventName in this._callbacks)) return;
 
         const callbackName = this._get_callback_id(callback);
-        delete this._callbacks[eventName][callbackName];
+        this._callbacks.get(eventName).delete(callbackName);
 
     }
 
     _get_callback_id(callback){
        return hashCode(callback.toString()); 
+    }
+
+    init_callbacks(){
+        this._callbacks = new Map();
     }
 
 }

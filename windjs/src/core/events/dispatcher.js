@@ -1,10 +1,11 @@
 import CallbackRegistry from "core/events/callback_registry"
 
-import Logger from "core/logger";
+import {ComponentLogger} from "core/logger";
 
 export default class Dispatcher {
     constructor(){
         this.callbacks = new CallbackRegistry();
+        this.logger = new ComponentLogger(this);
     }
 
     bind(eventName, callback, context){
@@ -17,11 +18,14 @@ export default class Dispatcher {
     }
 
     emit(eventName, data){
-        Logger.debug("Emitting event ", eventName, "with data", data);
+        this.logger.debug("Emitting event ->", eventName, ":with data->", data);
         var callbacks = this.callbacks.get(eventName);
+        this.logger.debug("All callbacks ", callbacks);
         if (!callbacks) return;
         for(let entry of callbacks){
-            Logger.debug(entry);
+            this.logger.debug(entry);
+            let d = entry[1];
+            d.callback.call(d.context, data);
         }
         return this;
     }

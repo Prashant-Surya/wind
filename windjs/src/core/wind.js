@@ -1,58 +1,44 @@
 import EventsDispatcher from "core/events/dispatcher";
-import Connection from "core/connection/connection";
 import Factory from "core/utils/factory";
-import TransportConnection from "core/transports/transport_connection";
 import Logger from "core/logger";
-
-
-/*
-export class Connection {
-    constructor(wind){
-        this.wind = wind;
-        this.connection = this.create_connection();
-    }
-
-    create_connection() {
-        var transports = [
-            "websocket",
-            "xhr-streaming",
-            "iframe-eventsource",
-            "iframe-htmlfile",
-            "xhr-polling",
-            "iframe-xhr-polling",
-            "jsonp-polling"
-        ]
-
-        console.log("Transports", transports);
-
-        var conn = new SockJS('http://' + "localhost:8080" + '/chat', transports);
-        conn.onopen = function() {
-            console.log("Connected");
-            conn.send('I got connected');
-        }
-
-        conn.onmessage = function(e) {
-            console.log("Received Message", e);
-        }
-
-        console.log("Hellp"); 
-
-        return conn;
-    }
-
-    bind(channel_name, callback){
-       return false; 
-    }
-}
-*/
+import DefaultConfig from "core/config";
+import Runtime from "runtime";
 
 
 export default class Wind {
 
     constructor(app_key, options){
-        this.app_key = app_key;
-        this.options = options || {};
-        this.connection = this.createConnection();
+        this.key = app_key;
+
+        options = options || {};
+
+		let clusterConfig = {};
+
+		if (options.cluster) {
+			clusterConfig = DefaultConfig.getClusterConfig(options.cluster);
+		}
+
+		this.config = {
+			...DefaultConfig.getGlobalConfig(),
+			...options,
+			...clusterConfig
+		}
+
+        Logger.debug("Wind Config ", this.config);
+
+		let connectionManagerOptions = {
+			activityTimeout: this.config.activity_timeout,
+			pongTimeout: this.config.pong_timeout,
+			unavailableTimeout: this.config.unavailable_timeout,
+			...this.config,
+			encrypted: this.isEncrypted()
+		}
+
+        this.connection = Factory.createConnectionManager(
+            this.key = app_key,
+			connectionManagerOptions
+        );
+
         this.connection.bind('connected', () => {
             this.subscribeAll();
         })
@@ -61,6 +47,8 @@ export default class Wind {
         this.channels = Factory.createChannels();
 
         this.connection.bind('message', (params) => {
+            if (!params) return;
+
             var internal = (params.event.indexOf('wind_internal:') === 0);
 
             if (params.channel){
@@ -68,6 +56,10 @@ export default class Wind {
                 if (channel) {
                     channel.handleEvent(params.event, params.data);
                 }
+            }
+
+            if (!internal){
+                this.emitter.emit(params.event, params.data);
             }
         })
 
@@ -79,6 +71,8 @@ export default class Wind {
             Logger.warn(err);
         });
 
+        this.connect();
+
     }
 
     channel(name){
@@ -87,12 +81,6 @@ export default class Wind {
 
     allChannels() {
         return this.channels.all();
-    }
-    createConnection() {
-        const transport = new TransportConnection("hello");
-        transport.connect();
-        var connection = new Connection(this, transport);
-        return connection;
     }
 
     connect(){
@@ -154,6 +142,16 @@ export default class Wind {
         this.emitter.bind_all(callback);
         return this;
     }
+
+	isEncrypted() {
+        Logger.debug("Runtime protocol ", Runtime.getProtocol());
+
+		if (Runtime.getProtocol() === "https:") {
+			return true;
+		} else {
+			return Boolean(this.config.encrypted);
+		}
+	}
 
 }
 

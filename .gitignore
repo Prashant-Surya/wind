@@ -10,3 +10,4 @@
 .ropeproject/
 windjs/build
 windjs/node_modules
+wind/build

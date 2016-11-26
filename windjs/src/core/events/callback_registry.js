@@ -1,9 +1,10 @@
-import Logger from "core/logger";
+import {ComponentLogger} from "core/logger";
 
 export default class CallbackRegistry {
-    constructor(){
+    constructor(logger){
         this.init_callbacks();
-        Logger.debug("CallbackRegistry initialized ", this._callbacks);
+        this.logger = logger?logger: new ComponentLogger(this);
+        this.logger.debug("CallbackRegistry initialized ", this._callbacks);
     }
 
     get(eventName){

@@ -1,8 +1,8 @@
 import EventsDispatcher from "core/events/dispatcher";
 import Factory from "core/utils/factory";
-import Logger from "core/logger";
 import DefaultConfig from "core/config";
 import Runtime from "runtime";
+import {ComponentLogger} from "core/logger";
 
 
 export default class Wind {
@@ -11,6 +11,7 @@ export default class Wind {
         this.key = app_key;
 
         options = options || {};
+        this.logger = new ComponentLogger(this);
 
 		let clusterConfig = {};
 
@@ -24,7 +25,7 @@ export default class Wind {
 			...clusterConfig
 		}
 
-        Logger.debug("Wind Config ", this.config);
+        this.logger.debug("Wind Config ", this.config);
 
 		let connectionManagerOptions = {
 			activityTimeout: this.config.activity_timeout,
@@ -43,7 +44,7 @@ export default class Wind {
             this.subscribeAll();
         })
 
-        this.emitter = new EventsDispatcher(); 
+        this.emitter = new EventsDispatcher(this.logger);
         this.channels = Factory.createChannels();
 
         this.connection.bind('message', (params) => {
@@ -68,7 +69,7 @@ export default class Wind {
         });
 
         this.connection.bind('error', (err) => {
-            Logger.warn(err);
+            this.logger.warn(err);
         });
 
         this.connect();
@@ -113,7 +114,7 @@ export default class Wind {
 
 
     subscribe(channelName) {
-        Logger.debug("subscribing to channel ", channelName);
+        this.logger.debug("subscribing to channel ", channelName);
 
         var channel = this.channels.add(channelName, this);
         channel.subscribe();
@@ -144,7 +145,7 @@ export default class Wind {
     }
 
 	isEncrypted() {
-        Logger.debug("Runtime protocol ", Runtime.getProtocol());
+        this.logger.debug("Runtime protocol ", Runtime.getProtocol());
 
 		if (Runtime.getProtocol() === "https:") {
 			return true;

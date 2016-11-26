@@ -3,9 +3,9 @@ import CallbackRegistry from "core/events/callback_registry"
 import {ComponentLogger} from "core/logger";
 
 export default class Dispatcher {
-    constructor(){
-        this.callbacks = new CallbackRegistry();
-        this.logger = new ComponentLogger(this);
+    constructor(logger){
+        this.logger = logger?logger: new ComponentLogger(this);
+        this.callbacks = new CallbackRegistry(this.logger);
     }
 
     bind(eventName, callback, context){

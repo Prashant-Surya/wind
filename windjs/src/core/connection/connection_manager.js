@@ -177,7 +177,7 @@ export default class ConnectionManager extends EventsDispatcher{
                 this.logger.debug("COnnection closed callback");
 				this.abandonConnection();
 				if (this.shouldRetry()) {
-					this.retryIn(1000);
+					this.retryIn(5000);
 				}
 			}
 		};

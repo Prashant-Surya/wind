@@ -6,7 +6,6 @@ import tornado.ioloop
 import tornado.web
 
 import sockjs.tornado
-import pylzma
 import json
 
 

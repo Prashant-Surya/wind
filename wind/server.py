@@ -29,7 +29,20 @@ class StaticFilesHandler(tornado.web.RequestHandler):
         self.render('build/wind/wind.min.js')
 
 
+class PushMessagesAPIHandler(tornado.web.RequestHandler):
+    def get(self):
+        message = self.get_argument('message', default=None)
+        if message is None:
+            return
 
+        try:
+            message = json.loads(message)
+        except Exception, e:
+            print "Failed json loading ", e
+            return
+
+        handler = MessageHandler.get_handler()
+        handler.handle_message(message, self)
 
 
 class ChatConnection(sockjs.tornado.SockJSConnection):
@@ -70,6 +83,7 @@ if __name__ == "__main__":
     urls = [
         (r"/build/wind/wind.js", StaticFilesHandler),
         (r"/build/wind/wind.min.js", StaticFilesHandler),
+        (r"/push", PushMessagesAPIHandler),
         (r"/", IndexHandler),  ] + ChatRouter.urls + WindRouter.urls
 
     # 2. Create Tornado application

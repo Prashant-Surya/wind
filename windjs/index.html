@@ -8,7 +8,10 @@
 
     var connect_to_wind = function() {
         var channel;
-        var wind = new Wind();
+        var options = {
+            httpHost: 'sg.wind.hackerearth.com'
+        }
+        var wind = new Wind(null, options);
         var channel_name = "updates";
         channel = wind.subscribe(channel_name);
         console.log("channel ", channel);

@@ -20,10 +20,11 @@ export default class Dispatcher {
     emit(eventName, data){
         this.logger.debug("Emitting event ->", eventName, ":with data->", data);
         var callbacks = this.callbacks.get(eventName);
-        this.logger.debug("All callbacks ", callbacks);
-        if (!callbacks) return;
+        if (!callbacks) {
+            this.logger.debug("No callbacks found for eventName: ", eventName);
+            return;
+        }
         for(let entry of callbacks){
-            this.logger.debug(entry);
             let d = entry[1];
             d.callback.call(d.context, data);
         }

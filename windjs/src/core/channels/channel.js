@@ -1,6 +1,5 @@
 import EventsDispatcher from "core/events/dispatcher";
 
-
 export default class Channel extends EventsDispatcher{
     constructor(name, wind){
         super();
@@ -10,14 +9,6 @@ export default class Channel extends EventsDispatcher{
     }
 
     trigger(event, data){
-        /*
-        if (event.indexOf("client-") !== 0) {
-            throw new Errors.BadEventName(
-                "Event '" + event + "' does not start with 'client-'"
-            );
-        }
-        */
-
         return this.wind.send_event(event, data, this.name);
     }
 

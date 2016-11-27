@@ -235,6 +235,8 @@ export default class ConnectionManager extends EventsDispatcher{
         for (var event in this.connectionCallbacks) {
             this.connection.bind(event, this.connectionCallbacks[event]);
         }
+        this.updateState("connected", { socket_id: null });
+
         //this.resetActivityCheck();
     }
 

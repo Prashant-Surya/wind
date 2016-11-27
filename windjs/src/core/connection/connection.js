@@ -24,7 +24,7 @@ export default class Connection extends EventsDispatcher{
 
     send_event(name, data, channel){
         this.logger.debug("Received request for sending event ", name, data, channel);
-        var message = {
+        let message = {
             event: name,
             data: data
         }

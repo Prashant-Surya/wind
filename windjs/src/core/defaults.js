@@ -11,7 +11,7 @@ var Defaults = {
 	sockjs_host: 'localhost',
 	sockjs_http_port: 8080,
 	sockjs_https_port: 443,
-	sockjs_path: "/chat",
+	sockjs_path: "/wind",
 	// DEPRECATED: Stats
 	stats_host: 'stats.pusher.com',
 	// DEPRECATED: Other settings

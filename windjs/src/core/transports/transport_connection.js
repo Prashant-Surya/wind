@@ -1,6 +1,5 @@
 import EventsDispatcher from "core/events/dispatcher";
 import {ComponentLogger} from "core/logger";
-import Runtime from "runtime";
 
 
 export default class TransportConnection extends EventsDispatcher {
@@ -42,8 +41,13 @@ export default class TransportConnection extends EventsDispatcher {
                 "iframe-xhr-polling",
                 "jsonp-polling"
             ];
+            this.logger.debug("Transport received options ", this.options);
+            let host = this.options.httpHost;
+            let port = this.options.httpPort;
+            let httpPath = this.options.httpPath;
+            let endpoint = `http://${host}:${port}${httpPath}`;
 
-            this.socket = new SockJS('http://' + "localhost:8080" + '/chat', transports);
+            this.socket = new SockJS(endpoint, transports);
             this.logger.debug("SockJS connection object ", this.socket);
         } catch (e){
             this.changeState("closed");

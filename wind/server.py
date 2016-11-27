@@ -26,7 +26,7 @@ class IndexHandler(tornado.web.RequestHandler):
 
 class StaticFilesHandler(tornado.web.RequestHandler):
     def get(self):
-        self.render('build/wind/wind.js')
+        self.render('build/wind/wind.min.js')
 
 
 
@@ -67,7 +67,10 @@ if __name__ == "__main__":
     ChatRouter = sockjs.tornado.SockJSRouter(ChatConnection, '/chat')
     WindRouter = sockjs.tornado.SockJSRouter(ChatConnection, '/wind')
 
-    urls = [(r"/build/wind/wind.js", StaticFilesHandler), (r"/", IndexHandler),  ] + ChatRouter.urls + WindRouter.urls
+    urls = [
+        (r"/build/wind/wind.js", StaticFilesHandler),
+        (r"/build/wind/wind.min.js", StaticFilesHandler),
+        (r"/", IndexHandler),  ] + ChatRouter.urls + WindRouter.urls
 
     # 2. Create Tornado application
     app = tornado.web.Application(

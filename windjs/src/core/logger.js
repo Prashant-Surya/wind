@@ -30,6 +30,3 @@ export class ComponentLogger{
         return new Date().toLocaleString();
     }
 }
-
-
-export default Logger;

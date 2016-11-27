@@ -2,6 +2,8 @@ var ProvidePlugin = require('webpack').ProvidePlugin;
 var path = require('path');
 const webpack = require('webpack');
 
+var basePath = "../";
+
 module.exports = {
     target: 'node',
     entry: {
@@ -10,7 +12,7 @@ module.exports = {
 
     output: {
         library: "Wind",
-        path: "../wind/build/",
+        path: basePath + "wind/build/",
         filename: "[name]/[name].js",
         libraryTarget: "umd"
 
@@ -28,8 +30,8 @@ module.exports = {
     resolve: {
         extensions: ['', '.js'],
         root: [
-            path.resolve(__dirname, 'src'),
-            path.resolve(__dirname, 'node_modules'),
+            path.resolve(__dirname, '..', 'src'),
+            path.resolve(__dirname, '..', 'node_modules'),
         ],
         modulesDirectories: ['node_modules', 'src/runtimes/web', 'src/runtimes'],
     }
